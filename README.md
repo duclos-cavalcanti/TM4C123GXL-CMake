@@ -5,7 +5,7 @@ Took inspiration from [yusef's](https://www.hackster.io/tcss/upload-code-to-ti-t
 Will be using [lm4tools](https://github.com/utzig/lm4tools) to flash the device.
 `make cmake arm-none-eabi-gcc arm-none-eabi-gdb arm-none-eabi-newlib gcc-c++ libusb unzip openocd lm4flash`
 
-### Installing Dependencies and Repo
+### Install
 Dependencies are based on a Arch Linux system, should work on any Linux distro as long as
 the dependencies are installed accordingly.
 ```
@@ -21,7 +21,7 @@ git clone https://github.com/duclos-cavalcanti/embedded-shape-world
 As an example this will be installed at the home directory, but could be anywhere else for
 that matter. Also don't forget to add the lm4flash binary to your PATH variable.
 
-### Adding Udev Rules
+### Udev Rules
 It is needed to add the user to the users group as this removes the need to use sudo both
 for debugging and flashing the board.
 ```
@@ -43,7 +43,7 @@ make
 ```
 Versions may vary.
 
-## Compiling, Flashing, Debugging
+## Usage
 ```
 cd ~/tiva-projects/embedded=shape-world
 mkdir build
