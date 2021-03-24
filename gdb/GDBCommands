@@ -1,0 +1,2 @@
+source /home/duclos/.config/gdb/init
+target remote localhost:3333
