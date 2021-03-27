@@ -21,8 +21,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mthumb ${CPU} ${FPU}  -Os -ffunction-se
 
 # set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
-set(CMAKE_EXE_LINKER_FLAGS "-T${PROJECT_SOURCE_DIR}/link/tm4c123g.ld -specs=${PROJECT_SOURCE_DIR}/specs/tiva.specs" )
+set(CMAKE_EXE_LINKER_FLAGS "-T${PROJECT_SOURCE_DIR}/link/tm4c123g.ld -specs=${PROJECT_SOURCE_DIR}/specs/tiva.specs")
 
 # Processor specific definitions
 add_definitions(-DPART_TM4C123GH6PM)
