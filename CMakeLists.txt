@@ -33,10 +33,8 @@ set(LNK "       ")                              # Linking Flags
 set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -mthumb ${CPU} ${FPU} -MD")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthumb ${CPU} ${FPU} ${OPT} -std=gnu99 -MD -Os -pedantic ${DBG}")
 
-#set(CMAKE_EXE_LINKER_FLAGS "-T${PROJECT_SOURCE_DIR}/link/tm4c123g.ld -specs=${PROJECT_SOURCE_DIR}/specs/tiva.specs")
-
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-set(CMAKE_EXE_LINKER_FLAGS "-T ${PROJECT_SOURCE_DIR}/link/tm4c123g.ld --entry ResetIntHandler")
+set(CMAKE_EXE_LINKER_FLAGS "-T${PROJECT_SOURCE_DIR}/link/tm4c123g.ld -specs=${PROJECT_SOURCE_DIR}/specs/tiva.specs")
 
 # Processor specific definitions
 add_definitions(-DPART_${PART})
@@ -61,7 +59,7 @@ file (GLOB TIVA_SOURCES ${TIVAWARE_PATH}/driverlib/*.c)
 
 set (PROJECT_SOURCES
     ${USER_SOURCES}
-    ${TIVA_SOURCES}
+    # ${TIVA_SOURCES}
     )
 
 # Executable
