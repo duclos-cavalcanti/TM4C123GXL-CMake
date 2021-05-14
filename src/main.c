@@ -27,9 +27,9 @@ int main(void)
         {
             GPIO_PORTF_DATA_R ^= 0x04;  //Toggle PF2
             SysTick_Wait1ms(500);
-        }
-        else
+        } else {
             GPIO_PORTF_DATA_R &= ~0x04; //Clear PF2
+        }
         
         //Checks if SW2 has been pressed, SW2 uses negative logic
         if(!SW2)
