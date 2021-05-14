@@ -1,154 +1,104 @@
-// #include "TExaS.h"
 #include "tm4c123gh6pm.h"
+#include <stdint.h>
 
-#ifndef TM4C123GH6PM_H
-// GPIO Port F                     - Could also be uint32_t
-#define GPIO_PORTF_DATA_R       (*((volatile unsigned long *)0x400253FC)) 
-#define GPIO_PORTF_DIR_R        (*((volatile unsigned long *)0x40025400)) 
-#define GPIO_PORTF_AFSEL_R      (*((volatile unsigned long *)0x40025420)) 
-#define GPIO_PORTF_PUR_R        (*((volatile unsigned long *)0x40025510)) 
-#define GPIO_PORTF_DEN_R        (*((volatile unsigned long *)0x4002551C)) 
-#define GPIO_PORTF_LOCK_R       (*((volatile unsigned long *)0x40025520)) 
-#define GPIO_PORTF_CR_R         (*((volatile unsigned long *)0x40025524)) 
-#define GPIO_PORTF_AMSEL_R      (*((volatile unsigned long *)0x40025528)) 
-#define GPIO_PORTF_PCTL_R       (*((volatile unsigned long *)0x4002552C)) 
+//Global variables
+unsigned long SW1, SW2;  //Stores PF4 and PF0 input value
 
-// GPIO Port E
-#define GPIO_PORTE_DATA_R       (*((volatile unsigned long *)0x400243FC))
-#define GPIO_PORTE_DIR_R        (*((volatile unsigned long *)0x40024400))
-#define GPIO_PORTE_AFSEL_R      (*((volatile unsigned long *)0x40024420))
-#define GPIO_PORTE_PUR_R        (*((volatile unsigned long *)0x40024510))
-#define GPIO_PORTE_DEN_R        (*((volatile unsigned long *)0x4002451C))
-#define GPIO_PORTE_LOCK_R       (*((volatile unsigned long *)0x40024520))
-#define GPIO_PORTE_CR_R         (*((volatile unsigned long *)0x40024524))
-#define GPIO_PORTE_AMSEL_R      (*((volatile unsigned long *)0x40024528))
-#define GPIO_PORTE_PCTL_R       (*((volatile unsigned long *)0x4002452C))
-
-// GPIO Port B
-#define GPIO_PORTB_DATA_R       (*((volatile unsigned long *)0x400053FC))
-#define GPIO_PORTB_DIR_R        (*((volatile unsigned long *)0x40005400))
-#define GPIO_PORTB_AFSEL_R      (*((volatile unsigned long *)0x40005420))
-#define GPIO_PORTB_PUR_R        (*((volatile unsigned long *)0x40005510))
-#define GPIO_PORTB_DEN_R        (*((volatile unsigned long *)0x4000551C))
-#define GPIO_PORTB_LOCK_R       (*((volatile unsigned long *)0x40005520))
-#define GPIO_PORTB_CR_R         (*((volatile unsigned long *)0x40005524))
-#define GPIO_PORTB_AMSEL_R      (*((volatile unsigned long *)0x40005528))
-#define GPIO_PORTB_PCTL_R       (*((volatile unsigned long *)0x4000552C))
-
-// Clock for GPIOs
-#define SYSCTL_RCGC2_R          (*((volatile unsigned long *)0x400FE108))
-#endif
-
-// NVICs for Systick initializtion
-#define NVIC_ST_CTRL_R      (*((volatile unsigned long *)0xE000E010))
-#define NVIC_ST_RELOAD_R    (*((volatile unsigned long *)0xE000E014))
-#define NVIC_ST_CURRENT_R   (*((volatile unsigned long *)0xE000E018))
-
-#define TRAFFIC_LIGHTS      (*((volatile unsigned long *)0x400053FC))
-#define SENSORS             (*((volatile unsigned long *)0x400243FC))
-
-#define GoW     0
-#define waitW   1
-#define GoE     2
-#define waitE   3
-
-typedef struct state {
-        unsigned long out;
-        unsigned short wait;
-        unsigned long walk;
-        unsigned long next[4];
-
-} state_t;
-
-//   Global Variables
-unsigned long traffic, sensors;
-unsigned long input;
-unsigned char current_state;
-state_t FSM[4] = {                                      
-//      out   wait   input Combination                 
-//                   PE1=0, PE0=0 - no cars                             -       Translates to 0 (HEXA)
-//                   PE1=0, PE0=1 - cars on the East road               -       Translates to 1 (HEXA)
-//                   PE1=1, PE0=0 - cars on the West road               -       Translates to 2 (HEXA)
-//                   PE1=1, PE0=1 - cars on both East && North roads    -       Translates to 3 (HEXA)
-//
-//                                                                           RYG RYG
-        {0x21, 30,  {GoW, waitW, GoW, waitW}},         // Go West      - 00 100 001 - RedE GreenW
-        {0x22, 20,  {GoE, GoE, GoE, GoE}},             // Wait West    - 00 100 010 - RedE YellowW
-        {0x0C, 30,  {GoE, GoE, waitE, waitE}},         // Go East      - 00 001 100 - GreenE RedW
-        {0x14, 20,  {GoW, GoW, GoW, GoW}},             // Wait East    - 00 010 100 - YellowE RedW
-};
-
-//   Function Prototypes
+//Functions prototypes
+void PortFInit(void);
+void PLL_Init(void);
 void SysTick_Init(void);
-void Ports_Init(void);
-void SysTick_Wait(unsigned long delay);
-void SysTick_Wait10ms(unsigned long delay);
-void EnableInterrupts(void);
-// void DisableInterrupts(void);
+void SysTick_Wait1ms(unsigned long ms);
+
 
 int main(void)
-{    
-        // TExaS_Init(SW_PIN_PE210, LED_PIN_PB543210,ScopeOff); // activate grader and set system clock to 80 MHz
-        SysTick_Init();         // Initialize Systick
-        Ports_Init();           // Initialize Ports
-        EnableInterrupts();     // Enables interrupts
-        current_state = GoW;    // Go West State
-        while(1){
-                TRAFFIC_LIGHTS = FSM[current_state].out;
-                SysTick_Wait10ms(FSM[current_state].wait);
-                input = GPIO_PORTE_DATA_R & 0x03; // 0-PE2-PE1-PE0 & 0011
-                current_state = FSM[current_state].next[input];
+{
+    PLL_Init();
+    SysTick_Init();
+    PortFInit();
+
+    while(1)
+    {
+        SW1 = GPIO_PORTF_DATA_R&0x10; //Reads PF4 value(onboard SW1)
+        SW2 = GPIO_PORTF_DATA_R&0x01; //Reads PF0 value(onboard SW2)
+
+        //Checks if SW1 has been pressed, SW1 uses negative logic
+        if(!SW1)
+        {
+            GPIO_PORTF_DATA_R ^= 0x04;  //Toggle PF2
+            SysTick_Wait1ms(500);
         }
+        else
+            GPIO_PORTF_DATA_R &= ~0x04; //Clear PF2
+        
+        //Checks if SW2 has been pressed, SW2 uses negative logic
+        if(!SW2)
+            GPIO_PORTF_DATA_R |= 0x02;  //Set PF1
+        else
+            GPIO_PORTF_DATA_R &= ~0x02; //Clear PF1
+    }
+}
+
+//Setup port F
+void PortFInit(void)
+{
+    volatile unsigned long delay;
+    SYSCTL_RCGC2_R |= 0x00000020;   //F clock
+    delay = SYSCTL_RCGC2_R;         //delay
+    GPIO_PORTF_LOCK_R = 0x4C4F434B; //Unlock Port F
+    GPIO_PORTF_CR_R = 0x1F;         //Allow changes to PF4-0
+    GPIO_PORTF_AMSEL_R = 0x00;      //Disable analog functions
+    GPIO_PORTF_PCTL_R = 0x00000000; //GPIO clear bit PCTL
+    GPIO_PORTF_DIR_R = 0x06;        //PF2, PF1 output, PF4,PF0 input
+    GPIO_PORTF_AFSEL_R = 0x00;      //Clear alt functions
+    GPIO_PORTF_PUR_R |= 0x11;       //Enable pull-up resistor on PF4 and PF0
+    GPIO_PORTF_DEN_R |= 0x17;       //Enable digital pin PF4, PF0 and PF2-1
+}
+
+//Using the 400MHz PLL we get the bus frequency by dividing
+//400MHz / (SYSDIV2+1). Therefore, 400MHz/(4+1) = 80 MHz bus frequency
+#define SYSDIV2 4
+//Gets clock from PLL
+void PLL_Init(void)
+{
+    SYSCTL_RCC2_R |= SYSCTL_RCC2_USERCC2;   //Use RCC2 for advanced features
+    SYSCTL_RCC2_R |= SYSCTL_RCC2_BYPASS2;   //Bypass PLL during initialization
+    SYSCTL_RCC_R &= ~SYSCTL_RCC_XTAL_M;     //Clear XTAL field
+    SYSCTL_RCC_R += SYSCTL_RCC_XTAL_16MHZ;  //Use 16Mhz crystal
+    SYSCTL_RCC2_R &= ~SYSCTL_RCC2_OSCSRC2_M;//Clear oscillator source field
+    SYSCTL_RCC2_R += SYSCTL_RCC2_OSCSRC2_MO;//Use main oscillator source field
+    SYSCTL_RCC2_R &= ~SYSCTL_RCC2_PWRDN2;   //Activate PLL by clearing PWRDN
+
+    //As explained above we use 400MHz PLL and specified SYSDIV2 for 80MHz clock
+    SYSCTL_RCC2_R |= SYSCTL_RCC2_DIV400;    //Use 400MHz PLL
+    //Clear system clock divider field then configure 80Mhz clock
+    SYSCTL_RCC2_R = (SYSCTL_RCC2_R&~0x1FC00000) + (SYSDIV2<<22);
+    //Wait for the PLL to lock by polling PLLLRIS
+    while((SYSCTL_RIS_R&SYSCTL_RIS_PLLLRIS) == 0){};
+    SYSCTL_RCC2_R &= ~SYSCTL_RCC2_BYPASS2;  //Enable PLL by clearing BYPASS
 }
 
 void SysTick_Init(void)
 {
-        NVIC_ST_CTRL_R = 0;               // disable SysTick during setup
-        NVIC_ST_CTRL_R = 0x00000005;      // enable SysTick with core clock
+    NVIC_ST_CTRL_R = 0;     //Disable SysTick during setup
+    NVIC_ST_CURRENT_R = 0;  //Any write clears current
+    //Enable SysTick with core clock, i.e. NVIC_ST_CTRL_R = 0x00000005
+    NVIC_ST_CTRL_R = NVIC_ST_CTRL_ENABLE+NVIC_ST_CTRL_CLK_SRC;
 }
 
-void SysTick_Wait10ms(unsigned long delay)
+//Uses SysTick to count down 1ms*(passed value)
+void SysTick_Wait1ms(unsigned long ms)
 {
-        unsigned long i;
-        for(i=0; i<delay; i++){
-                unsigned long val = 800000;             // 800000*12.5ns equals 10ms
-                NVIC_ST_RELOAD_R = val-1;               // number of counts to wait
-                NVIC_ST_CURRENT_R = 0;                  // any value written to CURRENT clears
-                while((NVIC_ST_CTRL_R&0x00010000)==0){} // Wait for count flag
-        }
-}
+    //Clock is set to 80MHz, each Systick takes 1/80MHz = 12.5ns
+    //To get 1ms count down delay, take (1ms)/(12.5ns)
+    unsigned long delay = 80000;
+    unsigned long i;
 
-void Ports_Init()
-{
-        unsigned long volatile delay;
-	SYSCTL_RCGC2_R |= 0x32; // activate clock for Port B,E,F
-        delay = SYSCTL_RCGC2_R; // allow time for clock to start
-
-	// Port B - PortB5-B3 Traffic Light East / PortB2-B0 Traffic Light West
-        GPIO_PORTB_LOCK_R = 0x4C4F434B;   // unlock port
-        GPIO_PORTB_CR_R = 0x3F;           // allow changes to PB5-PB0
-	GPIO_PORTB_PCTL_R = 0x00000000;   // clear PCTL
-        GPIO_PORTB_AMSEL_R &= ~0x3F;      // disable analog on PB5-PB0
-        GPIO_PORTB_AFSEL_R &= ~0x3F;      // disable alt funct on PB5-PB0
-        GPIO_PORTB_DEN_R |= 0x3F;         // enable digital I/O on PB5-PB0
-	GPIO_PORTB_DIR_R |= 0x3F;         // PB5-PB0 outputs
-
-	// Ports E - PortE0 East Sensor / PortE1 West Sensor / PortE2 Walk Sensor
-        GPIO_PORTE_LOCK_R = 0x4C4F434B;   // unlock port
-        GPIO_PORTE_CR_R = 0x07;           // allow changes to PE2-PE0
-        GPIO_PORTE_PCTL_R = 0x00000000;   // clear PCTL
-        GPIO_PORTE_AMSEL_R &= ~0x07;      // disable analog on PE2-PE0
-        GPIO_PORTE_AFSEL_R &= ~0x07;      // disable alt funct on PE2-PE0
-        GPIO_PORTE_PUR_R &= ~0x07;        // disableb pull-up on PE2-PE0
-        GPIO_PORTE_DEN_R |= 0x07;         // enable digital I/O on PE2-PE0
-	GPIO_PORTE_DIR_R &= ~0x07;        // PE2-PE0 inputs
-
-	// Port F - PortF1 Dont Walk Light(RED) / Port F3 Walk Light(GREEN)
-        GPIO_PORTF_LOCK_R = 0x4C4F434B;   // unlock port
-        GPIO_PORTF_CR_R = 0x0A;           // allow changes to PF1 & PF3
-	GPIO_PORTF_PCTL_R = 0x00000000;   // clear PCTL
-        GPIO_PORTF_AMSEL_R &= ~0x0A;      // disable analog on PF1 & PF3
-        GPIO_PORTF_AFSEL_R &= ~0x0A;      // disable alt funct on PF1 & PF3
-        GPIO_PORTF_DEN_R |= 0x0A;         // enable digital I/O on PF1 & PF3
-	GPIO_PORTF_DIR_R |= 0x0A;         // PF1 & PF3 outputs
+    for(i = 0; i < ms; i++)
+    {
+        NVIC_ST_RELOAD_R = delay - 1;   //Reload value is the number of counts to wait
+        NVIC_ST_CURRENT_R = 0;          //Clears current
+        //Bit 16 of STCTRL is set to 1 if SysTick timer counts down to zero
+        while((NVIC_ST_CTRL_R&0x00010000) == 0){}
+    }
 }

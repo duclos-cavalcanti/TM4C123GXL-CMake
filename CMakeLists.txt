@@ -21,6 +21,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(PROJECT_INCLUDES
     ${PROJECT_SOURCE_DIR}/include
     ${TIVAWARE_PATH}/inc
+    ${TIVAWARE_PATH}/utils
     ${TIVAWARE_PATH}/driverlib
 )
 
