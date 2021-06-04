@@ -1,5 +1,4 @@
 # Developing on TI's TM4C123 
-Took inspiration from [yusef's](https://www.hackster.io/tcss/upload-code-to-ti-tm4c123-using-linux-cmake-and-lm4tools-c33cec) post on hackster.io, which did take inspiration from Vitor Mato's extensive [repo](https://github.com/vmatos/tiva-c-projects).
 
 ## Dependencies
 Will be using [lm4tools](https://github.com/utzig/lm4tools) to flash the device.
