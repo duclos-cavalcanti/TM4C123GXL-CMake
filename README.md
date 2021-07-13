@@ -1,8 +1,13 @@
 # Developing on TI's TM4C123 
+Bare CMake project to develop on TI's TM4c123 board. Main objective is to understand the
+toolchain process involved to begin developing on it.
 
 ## Dependencies
 Will be using [lm4tools](https://github.com/utzig/lm4tools) to flash the device.
-`make cmake arm-none-eabi-gcc arm-none-eabi-gdb arm-none-eabi-newlib gcc-c++ libusb unzip openocd lm4flash`
+
+```
+make cmake arm-none-eabi-gcc arm-none-eabi-gdb arm-none-eabi-newlib gcc-c++ libusb unzip openocd lm4flash
+```
 
 ### Install
 Dependencies are based on a Arch Linux system, should work on any Linux distro as long as
