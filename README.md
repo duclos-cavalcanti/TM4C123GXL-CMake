@@ -1,5 +1,5 @@
 # Developing on TI's TM4C123 
-Bare CMake project to develop on TI's TM4c123 board. Main objective is to understand the
+Bare CMake project to develop on TI's TM4c123 board. Repo's main objective was to understand the
 toolchain process involved to begin developing on it.
 
 ## Dependencies
